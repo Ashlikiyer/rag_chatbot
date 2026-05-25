@@ -1,0 +1,294 @@
+{
+	"info": {
+		"_postman_id": "rag-chatbot-tests",
+		"name": "RAG Chatbot API Tests",
+		"description": "Complete test suite for RAG Chatbot backend API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Phase 2: PDF Upload & Processing",
+			"item": [
+				{
+					"name": "Test 1: Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3001/",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": [""]
+						},
+						"description": "Verify the server is running and responding"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 2: Check Status (Empty)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3001/api/chat/status",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat", "status"]
+						},
+						"description": "Check vector store status before uploading any documents"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 3: Upload PDF File",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Select a PDF file from your computer"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/upload",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "upload"]
+						},
+						"description": "Upload a PDF file to test the complete ingestion pipeline"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 4: Check Status (After Upload)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3001/api/chat/status",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat", "status"]
+						},
+						"description": "Verify that chunks were stored in ChromaDB"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 5: Upload Invalid File (TXT)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Select test-document.txt to test error handling"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/upload",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "upload"]
+						},
+						"description": "Test that non-PDF files are rejected"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 6: Upload Without File",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/upload",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "upload"]
+						},
+						"description": "Test missing file error handling"
+					},
+					"response": []
+				}
+			],
+			"description": "Tests for PDF upload and processing pipeline"
+		},
+		{
+			"name": "Phase 3: Chat & Query API",
+			"item": [
+				{
+					"name": "Test 7: Ask Question - General",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"What is this document about?\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/chat",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat"]
+						},
+						"description": "Test basic question answering with RAG pipeline"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 8a: Ask Question - Specific",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"What are the main features mentioned?\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/chat",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat"]
+						},
+						"description": "Test specific question about document content"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 8b: Ask Question - Technical",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"What is the chunk size used in the system?\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/chat",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat"]
+						},
+						"description": "Test retrieval of specific technical details"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 8c: Ask Question - Not in Document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"What is the weather today?\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/chat",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat"]
+						},
+						"description": "Test that LLM says it doesn't know when info is not in documents"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 9: Empty Question",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/chat",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat"]
+						},
+						"description": "Test validation for empty question"
+					},
+					"response": []
+				},
+				{
+					"name": "Test 10: Question Without Documents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"Test question\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/chat",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["api", "chat"]
+						},
+						"description": "Test behavior when no documents are uploaded (run this after clearing ChromaDB)"
+					},
+					"response": []
+				}
+			],
+			"description": "Tests for chat and query functionality"
+		}
+	]
+}

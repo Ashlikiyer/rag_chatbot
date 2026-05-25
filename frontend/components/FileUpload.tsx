@@ -1,0 +1,157 @@
+"use client";
+
+import React, { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import { Upload, File, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
+import { uploadFile } from "@/lib/api";
+
+interface FileUploadProps {
+  onUploadSuccess?: (filename?: string) => void;
+  onFileSelect?: (filename: string | null) => void;
+}
+
+export function FileUpload({ onUploadSuccess, onFileSelect }: FileUploadProps) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      setError("Please upload a PDF file");
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File size must be less than 10MB");
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await uploadFile(file);
+      setUploadedFiles((prev) => [...prev, response.filename]);
+      setSuccess(
+        `Successfully uploaded ${response.filename} (${response.chunks} chunks, ${response.pages} pages)`
+      );
+      onUploadSuccess?.(response.filename);
+      onFileSelect?.(response.filename);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
+  }, [onUploadSuccess]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "application/pdf": [".pdf"],
+    },
+    maxFiles: 1,
+    disabled: uploading,
+  });
+
+  const removeFile = (filename: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f !== filename));
+    // If removing the selected file, clear selection
+    onFileSelect?.(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="pt-6">
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              isDragActive
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-primary/50"
+            } ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <input {...getInputProps()} />
+            <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            {isDragActive ? (
+              <p className="text-lg font-medium">Drop the PDF here...</p>
+            ) : (
+              <>
+                <p className="text-lg font-medium mb-2">
+                  Drag & drop a PDF file here
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  or click to select a file
+                </p>
+                <Button type="button" variant="outline" disabled={uploading}>
+                  {uploading ? "Uploading..." : "Select PDF"}
+                </Button>
+              </>
+            )}
+            <p className="text-xs text-muted-foreground mt-4">
+              Maximum file size: 10MB
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Success Message */}
+      {success && (
+        <div className="flex items-start gap-2 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-green-800 dark:text-green-200">{success}</p>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="flex items-start gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        </div>
+      )}
+
+      {/* Uploaded Files List */}
+      {uploadedFiles.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-sm font-medium mb-3">Uploaded Documents</h3>
+            <div className="space-y-2">
+              {uploadedFiles.map((filename, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <File className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{filename}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      removeFile(filename);
+                    }}
+                    className="h-8 w-8"
+                    title="Remove from list (does not delete from server)"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
