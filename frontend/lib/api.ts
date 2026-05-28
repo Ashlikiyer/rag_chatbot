@@ -82,4 +82,14 @@ export async function getStatus(): Promise<StatusResponse> {
   return response.data;
 }
 
+/**
+ * Clear documents for a specific filename from the vector store
+ */
+export async function clearDocuments(filename: string): Promise<{ success: boolean; message: string }> {
+  const response = await api.delete('/api/chat/clear', {
+    data: { filename }
+  });
+  return response.data;
+}
+
 export default api;

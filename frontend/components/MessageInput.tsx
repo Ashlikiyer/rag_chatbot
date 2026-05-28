@@ -34,38 +34,32 @@ export function MessageInput({
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            placeholder={
-              disabled
-                ? "Upload a document first..."
-                : "Ask a question about your document..."
-            }
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={disabled || loading}
-            className="flex-1"
-          />
-          <Button
-            onClick={handleSubmit}
-            disabled={disabled || loading || !message.trim()}
-            size="icon"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Press Enter to send, Shift+Enter for new line
-        </p>
-      </CardContent>
-    </Card>
+    <div className="flex gap-3 items-center">
+      <Input
+        type="text"
+        placeholder={
+          disabled
+            ? "Upload a document to start..."
+            : "Ask a question..."
+        }
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyPress={handleKeyPress}
+        disabled={disabled || loading}
+        className="flex-1 border-slate-300 dark:border-slate-700 focus-visible:ring-1 focus-visible:ring-slate-400 rounded-lg h-11 px-4 text-sm"
+      />
+      <Button
+        onClick={handleSubmit}
+        disabled={disabled || loading || !message.trim()}
+        size="icon"
+        className="h-11 w-11 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-200 dark:hover:bg-slate-300 transition-colors disabled:opacity-50"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-white dark:text-slate-900" />
+        ) : (
+          <Send className="h-4 w-4 text-white dark:text-slate-900" />
+        )}
+      </Button>
+    </div>
   );
 }

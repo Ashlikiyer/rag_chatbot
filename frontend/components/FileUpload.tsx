@@ -5,18 +5,20 @@ import { useDropzone } from "react-dropzone";
 import { Upload, File, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { uploadFile } from "@/lib/api";
+import { uploadFile, clearDocuments } from "@/lib/api";
 
 interface FileUploadProps {
   onUploadSuccess?: (filename?: string) => void;
   onFileSelect?: (filename: string | null) => void;
+  onClearChat?: () => void;
 }
 
-export function FileUpload({ onUploadSuccess, onFileSelect }: FileUploadProps) {
+export function FileUpload({ onUploadSuccess, onFileSelect, onClearChat }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -39,8 +41,22 @@ export function FileUpload({ onUploadSuccess, onFileSelect }: FileUploadProps) {
     setSuccess(null);
 
     try {
+      // Clear previous file from vector store if exists
+      if (currentFile) {
+        try {
+          await clearDocuments(currentFile);
+          console.log(`Cleared previous file: ${currentFile}`);
+        } catch (clearErr) {
+          console.error('Error clearing previous file:', clearErr);
+        }
+      }
+
+      // Clear chat messages
+      onClearChat?.();
+
       const response = await uploadFile(file);
-      setUploadedFiles((prev) => [...prev, response.filename]);
+      setUploadedFiles([response.filename]); // Replace with new file only
+      setCurrentFile(response.filename);
       setSuccess(
         `Successfully uploaded ${response.filename} (${response.chunks} chunks, ${response.pages} pages)`
       );
@@ -51,7 +67,7 @@ export function FileUpload({ onUploadSuccess, onFileSelect }: FileUploadProps) {
     } finally {
       setUploading(false);
     }
-  }, [onUploadSuccess]);
+  }, [onUploadSuccess, onFileSelect, onClearChat, currentFile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
