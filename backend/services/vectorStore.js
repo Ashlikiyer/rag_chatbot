@@ -185,10 +185,31 @@ async function getCollectionCount() {
   return await getDocumentCount();
 }
 
+/**
+ * Clear all chunks for a specific filename
+ * @param {string} filename - Name of the file to clear
+ * @returns {Promise<void>}
+ */
+async function clearDocumentsByFilename(filename) {
+  try {
+    const beforeCount = memoryStore[COLLECTION_NAME].length;
+    memoryStore[COLLECTION_NAME] = memoryStore[COLLECTION_NAME].filter(
+      item => item.metadata.filename !== filename
+    );
+    const afterCount = memoryStore[COLLECTION_NAME].length;
+    const removed = beforeCount - afterCount;
+    console.log(`Cleared ${removed} chunks for file: ${filename}`);
+  } catch (error) {
+    console.error('Error clearing documents by filename:', error);
+    throw new Error('Failed to clear documents: ' + error.message);
+  }
+}
+
 module.exports = {
   storeChunks,
   queryChunks,
   getDocumentCount,
   getCollectionCount,
-  clearCollection
+  clearCollection,
+  clearDocumentsByFilename
 };

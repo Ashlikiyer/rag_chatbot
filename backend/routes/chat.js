@@ -140,4 +140,35 @@ router.get('/status', async (req, res) => {
   }
 });
 
+/**
+ * DELETE /chat/clear
+ * Clear documents from vector store for a specific filename
+ */
+router.delete('/clear', async (req, res) => {
+  try {
+    const { filename } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required' });
+    }
+
+    console.log(`[CHAT] Clearing documents for filename: ${filename}`);
+
+    const { clearDocumentsByFilename } = require('../services/vectorStore');
+    await clearDocumentsByFilename(filename);
+
+    res.json({
+      success: true,
+      message: `Cleared all chunks for ${filename}`
+    });
+
+  } catch (error) {
+    console.error('Error clearing documents:', error);
+    res.status(500).json({
+      error: 'Failed to clear documents',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
