@@ -19,11 +19,19 @@ router.post('/', async (req, res) => {
     console.log(`[CHAT] Request body:`, JSON.stringify({ question: question.substring(0, 50), filename, sessionId }));
     console.log(`Processing question: ${question}${filename ? ` (filtered to: ${filename})` : ''}`);
 
-    // Step 1: Generate embedding for the question
-    const questionEmbedding = await generateEmbedding(question);
-
-    // Step 2: Query vector database for similar chunks (optionally filtered by filename)
-    const results = await queryChunks(questionEmbedding, 5, filename);
+    // Check if using Pinecone (Inference API) or ChromaDB (needs embeddings)
+    const VECTOR_STORE = process.env.VECTOR_STORE || 'chroma';
+    
+    let results;
+    if (VECTOR_STORE === 'pinecone') {
+      // Step 1 & 2: Query Pinecone with text directly (Inference API generates embedding)
+      results = await queryChunks(question, 5, filename);
+    } else {
+      // Step 1: Generate embedding for the question (ChromaDB)
+      const questionEmbedding = await generateEmbedding(question);
+      // Step 2: Query vector database for similar chunks
+      results = await queryChunks(questionEmbedding, 5, filename);
+    }
 
     // Hard safety filter in route (prevents cross-document leakage even if store filter fails)
     let filteredDocuments = results.documents || [];

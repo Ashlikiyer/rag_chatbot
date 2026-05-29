@@ -47,12 +47,12 @@ async function generateEmbeddings(texts) {
 
 /**
  * Simple text to vector conversion (placeholder for actual embedding model)
- * Creates a consistent 384-dimensional vector
+ * Creates a consistent 1536-dimensional vector to match Pinecone index
  * @param {string} text - Text to convert
  * @returns {Promise<Array<number>>} Vector representation
  */
 async function simpleTextToVector(text) {
-  const dimension = 384; // Standard dimension for sentence transformers
+  const dimension = 1536; // Match Pinecone index dimension (text-embedding-3-small)
   const vector = new Array(dimension).fill(0);
   
   // Create a simple hash-based vector
@@ -64,7 +64,10 @@ async function simpleTextToVector(text) {
   
   // Normalize the vector
   const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
-  return vector.map(val => magnitude > 0 ? val / magnitude : 0);
+  const normalized = vector.map(val => magnitude > 0 ? val / magnitude : 0);
+  
+  console.log(`Generated embedding: ${dimension} dimensions, magnitude: ${magnitude.toFixed(4)}`);
+  return normalized;
 }
 
 module.exports = { generateEmbedding, generateEmbeddings };

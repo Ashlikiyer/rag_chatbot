@@ -1,14 +1,40 @@
 require('dotenv').config();
+const { Pinecone } = require('@pinecone-database/pinecone');
 
 const COLLECTION_NAME = 'rag_documents';
+const VECTOR_STORE = process.env.VECTOR_STORE || 'chroma';
+
+// Pinecone client (lazy initialization)
+let pineconeClient = null;
+let pineconeIndex = null;
 
 /**
- * In-memory vector store fallback (no external ChromaDB server required)
+ * Initialize Pinecone client
+ */
+async function initPinecone() {
+  if (pineconeClient) return pineconeIndex;
+
+  try {
+    pineconeClient = new Pinecone({
+      apiKey: process.env.PINECONE_API_KEY
+    });
+
+    pineconeIndex = pineconeClient.index(process.env.PINECONE_INDEX);
+    console.log('Pinecone initialized successfully');
+    return pineconeIndex;
+  } catch (error) {
+    console.error('Error initializing Pinecone:', error);
+    throw new Error('Failed to initialize Pinecone: ' + error.message);
+  }
+}
+
+/**
+ * In-memory vector store fallback (ChromaDB alternative)
  * This keeps development simple and avoids connection timeouts.
  *
  * Note:
  * - Data is lost when backend restarts
- * - For production, switch to Pinecone or a running ChromaDB server
+ * - For production, switch to Pinecone
  */
 const memoryStore = {
   [COLLECTION_NAME]: []
@@ -45,13 +71,9 @@ function cosineSimilarity(a, b) {
 }
 
 /**
- * Store document chunks with their embeddings
- * @param {Array} chunks - Array of document chunks
- * @param {Array<Array<number>>} embeddings - Array of embedding vectors
- * @param {string} filename - Name of the source file
- * @returns {Promise<void>}
+ * Store document chunks with their embeddings (ChromaDB/Memory)
  */
-async function storeChunks(chunks, embeddings, filename) {
+async function storeChunksChroma(chunks, embeddings, filename) {
   try {
     if (!Array.isArray(chunks) || !Array.isArray(embeddings) || chunks.length !== embeddings.length) {
       throw new Error('Invalid chunks/embeddings payload');
@@ -101,13 +123,72 @@ async function storeChunks(chunks, embeddings, filename) {
 }
 
 /**
- * Query for similar chunks by cosine similarity
- * @param {Array<number>} queryEmbedding - Query embedding vector
- * @param {number} topK - Number of results to return
- * @param {string} filename - Optional filename to filter results
- * @returns {Promise<Object>} Query results with documents and metadata
+ * Store document chunks with their embeddings (Pinecone with Inference API)
+ * Note: With multilingual-e5-large, Pinecone generates embeddings automatically
  */
-async function queryChunks(queryEmbedding, topK = 5, filename = null) {
+async function storeChunksPinecone(chunks, embeddings, filename) {
+  try {
+    if (!Array.isArray(chunks)) {
+      throw new Error('Invalid chunks payload');
+    }
+
+    const index = await initPinecone();
+
+    // First, delete existing vectors for this filename
+    await clearDocumentsByFilenamePinecone(filename);
+
+    const timestamp = Date.now();
+
+    console.log(`Preparing ${chunks.length} chunks for Pinecone with Inference API`);
+
+    // Prepare records for Pinecone Inference API
+    // Use flat structure with _id and field names
+    // Note: 'text' is the required field name for multilingual-e5-large
+    const records = chunks.map((chunk, i) => {
+      return {
+        _id: `${filename}_chunk_${timestamp}_${i}`,
+        text: chunk.pageContent, // Required field name for Inference API
+        filename: filename,
+        chunkIndex: i,
+        timestamp: timestamp
+      };
+    });
+
+    console.log(`Records to upsert: ${records.length}`);
+    console.log(`Sample record:`, JSON.stringify(records[0], null, 2));
+
+    if (records.length === 0) {
+      throw new Error('No records to upsert');
+    }
+
+    // Upsert records using Inference API
+    // The SDK expects an options object with a records array
+    await index.upsertRecords({ records });
+    console.log(`Upserted ${records.length} records to Pinecone`);
+
+    console.log(`Stored ${records.length} chunks for file: ${filename} (Pinecone Inference API)`);
+  } catch (error) {
+    console.error('Error storing chunks in Pinecone:', error);
+    throw new Error('Failed to store chunks in Pinecone: ' + error.message);
+  }
+}
+
+/**
+ * Store document chunks with their embeddings
+ * Routes to appropriate vector store based on VECTOR_STORE env variable
+ */
+async function storeChunks(chunks, embeddings, filename) {
+  if (VECTOR_STORE === 'pinecone') {
+    return await storeChunksPinecone(chunks, embeddings, filename);
+  } else {
+    return await storeChunksChroma(chunks, embeddings, filename);
+  }
+}
+
+/**
+ * Query for similar chunks (ChromaDB/Memory)
+ */
+async function queryChunksChroma(queryEmbedding, topK = 5, filename = null) {
   try {
     let all = memoryStore[COLLECTION_NAME];
 
@@ -127,7 +208,6 @@ async function queryChunks(queryEmbedding, topK = 5, filename = null) {
 
     const scored = all.map((item) => {
       const similarity = cosineSimilarity(queryEmbedding, item.embedding);
-      // Keep "distance-like" value where lower is better
       const distance = 1 - similarity;
       return { ...item, similarity, distance };
     });
@@ -151,12 +231,91 @@ async function queryChunks(queryEmbedding, topK = 5, filename = null) {
 }
 
 /**
+ * Query for similar chunks (Pinecone with Inference API)
+ * Note: With multilingual-e5-large, we send text and Pinecone handles embedding
+ */
+async function queryChunksPinecone(queryText, topK = 5, filename = null) {
+  try {
+    // For Inference API, queryText should be a string, not an embedding array
+    if (typeof queryText !== 'string' || !queryText.trim()) {
+      return { documents: [], metadatas: [], distances: [] };
+    }
+
+    const index = await initPinecone();
+
+    // Build query options for Inference API (camelCase)
+    const queryOptions = {
+      topK: topK,
+      includeMetadata: true
+    };
+
+    // Add filename filter if provided
+    if (filename) {
+      queryOptions.filter = { filename: { $eq: filename } };
+      console.log(`Querying Pinecone with filename filter: ${filename}`);
+    }
+
+    console.log(`Querying Pinecone with text: "${queryText.substring(0, 50)}..."`);
+
+    // Query with text - Pinecone Inference API generates embedding automatically
+    // searchRecords expects a single object with query.inputs.text nested inside
+    const queryResponse = await index.searchRecords({
+      query: {
+        inputs: { text: queryText },
+        topK: topK
+      },
+      fields: ['text', 'filename', 'chunkIndex', 'timestamp'],
+      ...(filename && { filter: { filename: { $eq: filename } } })
+    });
+
+    if (!queryResponse.result || !queryResponse.result.hits || queryResponse.result.hits.length === 0) {
+      console.log('No matches found in Pinecone');
+      return { documents: [], metadatas: [], distances: [] };
+    }
+
+    const hits = queryResponse.result.hits;
+    const formattedResults = {
+      documents: hits.map(hit => hit.fields?.text || ''),
+      metadatas: hits.map(hit => ({
+        filename: hit.fields?.filename || '',
+        chunkIndex: hit.fields?.chunkIndex || 0,
+        timestamp: hit.fields?.timestamp || 0
+      })),
+      distances: hits.map(hit => 1 - (hit._score || 0))
+    };
+
+    console.log(`Found ${formattedResults.documents.length} similar chunks (Pinecone Inference API)`);
+    return formattedResults;
+  } catch (error) {
+    console.error('Error querying Pinecone:', error);
+    throw new Error('Failed to query Pinecone: ' + error.message);
+  }
+}
+
+/**
+ * Query for similar chunks
+ * Routes to appropriate vector store based on VECTOR_STORE env variable
+ */
+async function queryChunks(queryEmbedding, topK = 5, filename = null) {
+  if (VECTOR_STORE === 'pinecone') {
+    return await queryChunksPinecone(queryEmbedding, topK, filename);
+  } else {
+    return await queryChunksChroma(queryEmbedding, topK, filename);
+  }
+}
+
+/**
  * Get count of chunks in the store
- * @returns {Promise<number>}
  */
 async function getDocumentCount() {
   try {
-    return memoryStore[COLLECTION_NAME].length;
+    if (VECTOR_STORE === 'pinecone') {
+      const index = await initPinecone();
+      const stats = await index.describeIndexStats();
+      return stats.totalRecordCount || 0;
+    } else {
+      return memoryStore[COLLECTION_NAME].length;
+    }
   } catch (error) {
     console.error('Error getting document count:', error);
     return 0;
@@ -165,12 +324,17 @@ async function getDocumentCount() {
 
 /**
  * Clear all chunks from the store
- * @returns {Promise<void>}
  */
 async function clearCollection() {
   try {
-    memoryStore[COLLECTION_NAME] = [];
-    console.log('Collection cleared successfully (memory store)');
+    if (VECTOR_STORE === 'pinecone') {
+      const index = await initPinecone();
+      await index.deleteAll();
+      console.log('Collection cleared successfully (Pinecone)');
+    } else {
+      memoryStore[COLLECTION_NAME] = [];
+      console.log('Collection cleared successfully (memory store)');
+    }
   } catch (error) {
     console.error('Error clearing collection:', error);
     throw new Error('Failed to clear collection: ' + error.message);
@@ -179,18 +343,15 @@ async function clearCollection() {
 
 /**
  * Alias for getDocumentCount
- * @returns {Promise<number>}
  */
 async function getCollectionCount() {
   return await getDocumentCount();
 }
 
 /**
- * Clear all chunks for a specific filename
- * @param {string} filename - Name of the file to clear
- * @returns {Promise<void>}
+ * Clear all chunks for a specific filename (ChromaDB/Memory)
  */
-async function clearDocumentsByFilename(filename) {
+async function clearDocumentsByFilenameChroma(filename) {
   try {
     const beforeCount = memoryStore[COLLECTION_NAME].length;
     memoryStore[COLLECTION_NAME] = memoryStore[COLLECTION_NAME].filter(
@@ -198,10 +359,50 @@ async function clearDocumentsByFilename(filename) {
     );
     const afterCount = memoryStore[COLLECTION_NAME].length;
     const removed = beforeCount - afterCount;
-    console.log(`Cleared ${removed} chunks for file: ${filename}`);
+    console.log(`Cleared ${removed} chunks for file: ${filename} (memory store)`);
   } catch (error) {
     console.error('Error clearing documents by filename:', error);
     throw new Error('Failed to clear documents: ' + error.message);
+  }
+}
+
+/**
+ * Clear all chunks for a specific filename (Pinecone)
+ */
+async function clearDocumentsByFilenamePinecone(filename) {
+  try {
+    const index = await initPinecone();
+    
+    // Delete all vectors with matching filename
+    // Note: deleteMany may return 404 if no vectors exist, which is fine
+    try {
+      await index.deleteMany({
+        filter: { filename: { $eq: filename } }
+      });
+      console.log(`Cleared chunks for file: ${filename} (Pinecone)`);
+    } catch (deleteError) {
+      // 404 means no vectors to delete, which is fine for first upload
+      if (deleteError.message && deleteError.message.includes('404')) {
+        console.log(`No existing chunks to clear for: ${filename} (Pinecone)`);
+      } else {
+        throw deleteError;
+      }
+    }
+  } catch (error) {
+    console.error('Error clearing documents by filename in Pinecone:', error);
+    throw new Error('Failed to clear documents: ' + error.message);
+  }
+}
+
+/**
+ * Clear all chunks for a specific filename
+ * Routes to appropriate vector store based on VECTOR_STORE env variable
+ */
+async function clearDocumentsByFilename(filename) {
+  if (VECTOR_STORE === 'pinecone') {
+    return await clearDocumentsByFilenamePinecone(filename);
+  } else {
+    return await clearDocumentsByFilenameChroma(filename);
   }
 }
 

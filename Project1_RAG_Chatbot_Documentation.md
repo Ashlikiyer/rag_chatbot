@@ -27,7 +27,7 @@ RAG stands for Retrieval-Augmented Generation. Instead of asking an LLM to answe
 
 ---
 
-### 1.2 Why This Project Matters for the Job
+### 1.2 Why This Project Matters for the Job  
 
 | Job Requirement | How This Project Covers It |
 |---|---|

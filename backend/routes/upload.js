@@ -72,12 +72,19 @@ router.post('/', upload.single('file'), async (req, res) => {
     };
     const chunks = await chunkText(cleanedText, metadata);
 
-    // Step 5: Generate embeddings for each chunk
-    const chunkTexts = chunks.map(c => c.pageContent);
-    const embeddings = await generateEmbeddings(chunkTexts);
-
-    // Step 6: Store chunks and embeddings in vector database
-    await storeChunks(chunks, embeddings, req.file.originalname);
+    // Check if using Pinecone (Inference API) or ChromaDB (needs embeddings)
+    const VECTOR_STORE = process.env.VECTOR_STORE || 'chroma';
+    
+    if (VECTOR_STORE === 'pinecone') {
+      // Step 5 & 6: Store chunks directly - Pinecone Inference API generates embeddings
+      await storeChunks(chunks, null, req.file.originalname);
+    } else {
+      // Step 5: Generate embeddings for each chunk (ChromaDB)
+      const chunkTexts = chunks.map(c => c.pageContent);
+      const embeddings = await generateEmbeddings(chunkTexts);
+      // Step 6: Store chunks and embeddings in vector database
+      await storeChunks(chunks, embeddings, req.file.originalname);
+    }
 
     // Clean up uploaded file and destroy parser
     await parser.destroy();

@@ -133,70 +133,78 @@
 
 ---
 
-### Phase 4 — Frontend: Chat UI (~5 hours)
+### Phase 4 — Frontend: Chat UI (~5 hours) ✅ COMPLETE
 **Goal:** Build Next.js UI with file uploader and real-time chat interface
 
 #### Frontend Initialization
-- [ ] Create Next.js app: `npx create-next-app@latest frontend --typescript --tailwind`
-- [ ] Install ShadCN UI: `npx shadcn@latest init`
-- [ ] Install additional dependencies:
+- [x] Create Next.js app: `npx create-next-app@latest frontend --typescript --tailwind` ✓
+- [x] Install ShadCN UI: `npx shadcn@latest init` ✓
+- [x] Install additional dependencies: ✓
   - axios
   - react-dropzone
-  - react-markdown
+  - lucide-react (icons)
 
 #### Component Development
-- [ ] Create `frontend/components/FileUpload.tsx`
+- [x] Create `frontend/components/FileUpload.tsx` ✓
   - Implement drag-and-drop zone (react-dropzone)
-  - Add upload progress bar
+  - Add upload progress indicator
   - Display list of uploaded documents
   - Add file validation (PDF only, size limits)
+  - Show success/error messages
 
-- [ ] Create `frontend/components/ChatWindow.tsx`
+- [x] Create `frontend/components/ChatWindow.tsx` ✓
   - Implement scrollable message list
   - Create user/assistant message bubbles
-  - Render markdown in assistant responses
   - Show source citations below answers
   - Add auto-scroll to latest message
+  - Display active document indicator
 
-- [ ] Create `frontend/components/MessageInput.tsx`
+- [x] Create `frontend/components/MessageInput.tsx` ✓
   - Text input field
   - Send button
   - Loading spinner
   - Disable during processing
 
 #### API Integration
-- [ ] Create `frontend/lib/api.ts`
-- [ ] Implement POST to backend `/upload` endpoint
-- [ ] Implement POST to backend `/chat` endpoint
-- [ ] Add error handling with user-friendly messages
+- [x] Create `frontend/lib/api.ts` ✓
+- [x] Implement POST to backend `/upload` endpoint ✓
+- [x] Implement POST to backend `/chat` endpoint ✓
+- [x] Add error handling with user-friendly messages ✓
+- [x] Add filename filtering for document-specific queries ✓
 
 #### Main Page
-- [ ] Create/update `frontend/app/page.tsx`
-- [ ] Integrate all components
-- [ ] Add layout and styling
-- [ ] Implement state management
+- [x] Create/update `frontend/app/page.tsx` ✓
+- [x] Integrate all components ✓
+- [x] Add layout and styling ✓
+- [x] Implement state management ✓
+- [x] Add document status indicator ✓
 
 #### Testing Phase 4
-- [ ] Test file upload functionality
-- [ ] Test chat interface with backend
-- [ ] Test error states and loading states
-- [ ] Test responsive design
-- [ ] Test markdown rendering
+- [x] Test file upload functionality ✓
+- [x] Test chat interface with backend ✓
+- [x] Test error states and loading states ✓
+- [x] Test responsive design ✓
+- [x] Fixed PDF upload error (500 Internal Server Error) ✓
+- [x] Implemented document filtering to prevent cross-document results ✓
+- [x] Added scanned PDF detection ✓
 
 ---
 
-### Phase 5 — Migrate to Pinecone + Deploy (~4 hours)
+### Phase 5 — Migrate to Pinecone + Deploy (~4 hours) ✅ PINECONE COMPLETE
 **Goal:** Switch to Pinecone and deploy both frontend and backend
 
 #### Pinecone Integration
-- [ ] Install Pinecone SDK: `npm install @pinecone-database/pinecone`
-- [ ] Update `vectorStore.js` to support both ChromaDB and Pinecone
-- [ ] Add config flag to switch between vector stores
-- [ ] Update `.env` with Pinecone variables:
+- [x] Install Pinecone SDK: `npm install @pinecone-database/pinecone` ✓
+- [x] Update `vectorStore.js` to support both ChromaDB and Pinecone ✓
+- [x] Add config flag to switch between vector stores ✓
+- [x] Update `.env` with Pinecone variables: ✓
   - VECTOR_STORE=pinecone
   - PINECONE_API_KEY
   - PINECONE_INDEX
-- [ ] Test Pinecone integration locally
+- [x] Test Pinecone integration locally ✓
+- [x] Implement Pinecone Inference API with multilingual-e5-large ✓
+- [x] Fix searchRecords API format (nested query.inputs.text structure) ✓
+- [x] Verify end-to-end RAG pipeline with Pinecone ✓
 
 #### Backend Deployment (Render.com)
 - [ ] Push code to GitHub repository
@@ -300,10 +308,19 @@
 
 ## 📊 Progress Summary
 
-**Current Phase:** Phase 3 - Backend Complete, Moving to Phase 4 (Frontend)  
-**Backend Status:** ✅ Fully functional and running on http://localhost:3001  
-**Completion:** Phases 0-3 Complete (60% overall)  
-**Next Steps:** Build Next.js frontend with file upload and chat UI
+**Current Phase:** Phase 5 - Deployment (Pinecone Integration ✅ Complete)  
+**Backend Status:** ✅ Fully functional with Pinecone Inference API on http://localhost:3001  
+**Frontend Status:** ✅ Fully functional with file upload + chat UI  
+**Pinecone Status:** ✅ Integrated with multilingual-e5-large model  
+**Completion:** Phases 0-5 (Pinecone) Complete (85% overall)  
+**Next Steps:** Deploy to Render (backend) + Vercel (frontend)
+
+### Recent Achievements (May 29, 2026)
+- ✅ Successfully integrated Pinecone Inference API
+- ✅ Implemented automatic embedding generation with multilingual-e5-large
+- ✅ Fixed searchRecords API format (nested query.inputs.text structure)
+- ✅ Verified end-to-end RAG pipeline: Upload → Store → Query → Retrieve → Answer
+- ✅ Tested with real PDF documents - working perfectly!
 
 ---
 
@@ -335,5 +352,5 @@
 
 ---
 
-**Last Updated:** May 22, 2026  
-**Status:** 🟡 In Progress
+**Last Updated:** May 28, 2026  
+**Status:** 🟡 In Progress - Ready for Deployment Phase
