@@ -6,7 +6,7 @@ import { ChatWindow, Message } from "@/components/ChatWindow";
 import { MessageInput } from "@/components/MessageInput";
 import { sendChatMessage, getStatus, clearDocuments } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Trash2, Menu, X } from "lucide-react";
+import { FileText, Trash2, Menu, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -16,6 +16,7 @@ export default function Home() {
   const [documentCount, setDocumentCount] = useState(0);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showUploadFab, setShowUploadFab] = useState(true);
 
   // Check if documents are uploaded
   const checkStatus = async () => {
@@ -87,6 +88,7 @@ export default function Home() {
         content: `Document uploaded! Ask me anything about **${filename}**.`,
       };
       setMessages([welcomeMessage]);
+      setShowUploadFab(false); // Hide FAB after successful upload
     }
     // Close sidebar on mobile after upload
     setSidebarOpen(false);
@@ -208,6 +210,17 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Floating Action Button for Mobile Upload */}
+      {showUploadFab && !hasDocuments && (
+        <Button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 z-50"
+          size="icon"
+        >
+          <Upload className="h-6 w-6 text-white" />
+        </Button>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full md:h-screen">
