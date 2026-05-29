@@ -87,33 +87,33 @@ export function FileUpload({ onUploadSuccess, onFileSelect, onClearChat }: FileU
   return (
     <div className="space-y-4">
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-4 md:pt-6">
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-4 md:p-8 text-center cursor-pointer transition-colors ${
               isDragActive
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-primary/50"
             } ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <input {...getInputProps()} />
-            <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <Upload className="mx-auto h-8 w-8 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
             {isDragActive ? (
-              <p className="text-lg font-medium">Drop the PDF here...</p>
+              <p className="text-base md:text-lg font-medium">Drop the PDF here...</p>
             ) : (
               <>
-                <p className="text-lg font-medium mb-2">
+                <p className="text-base md:text-lg font-medium mb-2">
                   Drag & drop a PDF file here
                 </p>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
                   or click to select a file
                 </p>
-                <Button type="button" variant="outline" disabled={uploading}>
+                <Button type="button" variant="outline" size="sm" disabled={uploading} className="text-xs md:text-sm">
                   {uploading ? "Uploading..." : "Select PDF"}
                 </Button>
               </>
             )}
-            <p className="text-xs text-muted-foreground mt-4">
+            <p className="text-xs text-muted-foreground mt-3 md:mt-4">
               Maximum file size: 10MB
             </p>
           </div>
@@ -122,34 +122,34 @@ export function FileUpload({ onUploadSuccess, onFileSelect, onClearChat }: FileU
 
       {/* Success Message */}
       {success && (
-        <div className="flex items-start gap-2 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800 dark:text-green-200">{success}</p>
+        <div className="flex items-start gap-2 p-3 md:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <p className="text-xs md:text-sm text-green-800 dark:text-green-200 break-words">{success}</p>
         </div>
       )}
 
       {/* Error Message */}
       {error && (
-        <div className="flex items-start gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        <div className="flex items-start gap-2 p-3 md:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-xs md:text-sm text-red-800 dark:text-red-200 break-words">{error}</p>
         </div>
       )}
 
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
         <Card>
-          <CardContent className="pt-6">
-            <h3 className="text-sm font-medium mb-3">Uploaded Documents</h3>
+          <CardContent className="pt-4 md:pt-6">
+            <h3 className="text-xs md:text-sm font-medium mb-3">Uploaded Documents</h3>
             <div className="space-y-2">
               {uploadedFiles.map((filename, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                  className="flex items-center justify-between p-2 md:p-3 bg-muted rounded-lg"
                 >
-                  <div className="flex items-center gap-2">
-                    <File className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{filename}</span>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <File className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-xs md:text-sm truncate">{filename}</span>
                   </div>
                   <Button
                     variant="ghost"
@@ -157,10 +157,10 @@ export function FileUpload({ onUploadSuccess, onFileSelect, onClearChat }: FileU
                     onClick={() => {
                       removeFile(filename);
                     }}
-                    className="h-8 w-8"
+                    className="h-7 w-7 md:h-8 md:w-8 flex-shrink-0"
                     title="Remove from list (does not delete from server)"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
                   </Button>
                 </div>
               ))}

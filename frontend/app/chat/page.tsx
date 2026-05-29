@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { FileUpload } from "@/components/FileUpload";
@@ -6,7 +6,7 @@ import { ChatWindow, Message } from "@/components/ChatWindow";
 import { MessageInput } from "@/components/MessageInput";
 import { sendChatMessage, getStatus, clearDocuments } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -15,6 +15,7 @@ export default function Home() {
   const [hasDocuments, setHasDocuments] = useState(false);
   const [documentCount, setDocumentCount] = useState(0);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check if documents are uploaded
   const checkStatus = async () => {
@@ -34,6 +35,9 @@ export default function Home() {
   }, []);
 
   const handleSendMessage = async (content: string) => {
+    // Close sidebar on mobile after sending message
+    setSidebarOpen(false);
+    
     // Add user message
     const userMessage: Message = {
       role: "user",
@@ -84,6 +88,8 @@ export default function Home() {
       };
       setMessages([welcomeMessage]);
     }
+    // Close sidebar on mobile after upload
+    setSidebarOpen(false);
   };
 
   const handleClearChat = () => {
@@ -111,11 +117,53 @@ export default function Home() {
   };
 
   return (
-    <main className="h-screen overflow-hidden bg-white dark:bg-slate-950 flex">
+    <main className="h-screen overflow-hidden bg-white dark:bg-slate-950 flex flex-col md:flex-row">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 z-20">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-slate-900 dark:bg-slate-100 flex items-center justify-center">
+            <FileText className="h-4 w-4 text-white dark:text-slate-900" />
+          </div>
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Document Assistant
+          </h1>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="md:hidden"
+        >
+          {sidebarOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+
+      {/* Sidebar Overlay for Mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Left Sidebar */}
-      <div className="w-80 border-r border-slate-200 dark:border-slate-800 flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+      <div
+        className={`
+          fixed md:relative inset-y-0 left-0 z-40
+          w-80 md:w-80 lg:w-96
+          border-r border-slate-200 dark:border-slate-800 
+          bg-white dark:bg-slate-950
+          flex flex-col
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+        {/* Desktop Header */}
+        <div className="hidden md:block p-4 lg:p-6 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-slate-900 dark:bg-slate-100 flex items-center justify-center">
               <FileText className="h-5 w-5 text-white dark:text-slate-900" />
@@ -127,7 +175,7 @@ export default function Home() {
         </div>
 
         {/* Documents Section */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="mb-4">
             <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-4">
               <FileText className="h-4 w-4" />
@@ -162,7 +210,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full md:h-screen">
         {/* Chat Window */}
         <div className="flex-1 overflow-hidden">
           <ChatWindow messages={messages} />
@@ -170,14 +218,14 @@ export default function Home() {
 
         {/* Active Document Indicator */}
         {selectedFile && (
-          <div className="px-6 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-sm text-slate-600 dark:text-slate-400">
+          <div className="px-4 md:px-6 py-2 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-xs md:text-sm text-slate-600 dark:text-slate-400">
             <FileText className="h-3.5 w-3.5 inline mr-2" />
-            Searching in: <span className="font-medium text-slate-900 dark:text-white">{selectedFile}</span>
+            Searching in: <span className="font-medium text-slate-900 dark:text-white truncate inline-block max-w-50 md:max-w-none">{selectedFile}</span>
           </div>
         )}
 
         {/* Message Input */}
-        <div className="border-t border-slate-200 dark:border-slate-800 p-6">
+        <div className="border-t border-slate-200 dark:border-slate-800 p-4 md:p-6">
           <MessageInput
             onSendMessage={handleSendMessage}
             disabled={!hasDocuments}
