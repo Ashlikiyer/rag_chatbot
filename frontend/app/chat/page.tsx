@@ -16,7 +16,7 @@ export default function Home() {
   const [documentCount, setDocumentCount] = useState(0);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showUploadFab, setShowUploadFab] = useState(true);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Check if documents are uploaded
   const checkStatus = async () => {
@@ -88,10 +88,56 @@ export default function Home() {
         content: `Document uploaded! Ask me anything about **${filename}**.`,
       };
       setMessages([welcomeMessage]);
-      setShowUploadFab(false); // Hide FAB after successful upload
     }
     // Close sidebar on mobile after upload
     setSidebarOpen(false);
+  };
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      alert("Please upload a PDF file");
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size must be less than 10MB");
+      return;
+    }
+
+    try {
+      const { uploadFile } = await import("@/lib/api");
+      
+      // Clear previous file if exists
+      if (selectedFile) {
+        try {
+          await clearDocuments(selectedFile);
+        } catch (err) {
+          console.error('Error clearing previous file:', err);
+        }
+      }
+
+      // Clear chat messages
+      handleClearChat();
+
+      const response = await uploadFile(file);
+      handleUploadSuccess(response.filename);
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to upload file");
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleClearChat = () => {
@@ -211,16 +257,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Floating Action Button for Mobile Upload */}
-      {showUploadFab && !hasDocuments && (
-        <Button
-          onClick={() => setSidebarOpen(true)}
-          className="md:hidden fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 z-50"
-          size="icon"
-        >
-          <Upload className="h-6 w-6 text-white" />
-        </Button>
-      )}
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full md:h-screen">
@@ -239,11 +283,22 @@ export default function Home() {
 
         {/* Message Input */}
         <div className="border-t border-slate-200 dark:border-slate-800 p-4 md:p-6">
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            disabled={!hasDocuments}
-            loading={loading}
-          />
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleFileButtonClick}
+              className="shrink-0 h-10 w-10 md:h-11 md:w-11"
+              title="Attach PDF document"
+            >
+              <Upload className="h-4 w-4 md:h-5 md:w-5" />
+            </Button>
+            <MessageInput
+              onSendMessage={handleSendMessage}
+              disabled={!hasDocuments}
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
     </main>
