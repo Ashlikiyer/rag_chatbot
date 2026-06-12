@@ -274,6 +274,12 @@ async function queryChunksPinecone(queryText, topK = 5, filename = null) {
     }
 
     const hits = queryResponse.result.hits;
+    
+    // Debug: log the first hit structure
+    if (hits.length > 0) {
+      console.log('[DEBUG] First hit structure:', JSON.stringify(hits[0], null, 2));
+    }
+    
     const formattedResults = {
       documents: hits.map(hit => hit.fields?.text || ''),
       metadatas: hits.map(hit => ({
@@ -285,6 +291,7 @@ async function queryChunksPinecone(queryText, topK = 5, filename = null) {
     };
 
     console.log(`Found ${formattedResults.documents.length} similar chunks (Pinecone Inference API)`);
+    console.log('[DEBUG] First metadata:', JSON.stringify(formattedResults.metadatas[0], null, 2));
     return formattedResults;
   } catch (error) {
     console.error('Error querying Pinecone:', error);
