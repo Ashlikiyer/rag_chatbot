@@ -258,14 +258,14 @@ async function queryChunksPinecone(queryText, topK = 5, filename = null) {
     console.log(`Querying Pinecone with text: "${queryText.substring(0, 50)}..."`);
 
     // Query with text - Pinecone Inference API generates embedding automatically
-    // searchRecords expects a single object with query.inputs.text nested inside
+    // Note: Pinecone Inference API filters don't work reliably with searchRecords
+    // So we query more results and filter in the route layer
     const queryResponse = await index.searchRecords({
       query: {
         inputs: { text: queryText },
-        topK: topK
+        topK: filename ? topK * 3 : topK  // Query more if filtering by filename
       },
-      fields: ['text', 'filename', 'chunkIndex', 'timestamp'],
-      ...(filename && { filter: { filename: { $eq: filename } } })
+      fields: ['text', 'filename', 'chunkIndex', 'timestamp']
     });
 
     if (!queryResponse.result || !queryResponse.result.hits || queryResponse.result.hits.length === 0) {
