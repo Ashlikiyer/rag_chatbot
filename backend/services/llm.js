@@ -33,7 +33,7 @@ Answer using ONLY the information in the provided context. If the answer is not 
     ];
 
     const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',  // Updated to current model
+      model: 'openai/gpt-oss-120b',  // Updated to current model
       messages: messages,
       max_tokens: 1024,
       temperature: 0.1, // Low temperature for factual responses
